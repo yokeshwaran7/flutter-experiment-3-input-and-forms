@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Product Search &amp; Filter | Flutter Experiment 3</title>
+  <meta name="description" content="Flutter Lab Experiment 3: Add Interactivity to App – Input and Forms. Product Search & Filter demonstrating TextField, DropdownButtonFormField, Slider, ElevatedButton, Form, setState, and ProductCard custom widget." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --teal:        #00897B;
+      --teal-dark:   #00695C;
+      --teal-light:  #B2DFDB;
+      --blue:        #0288D1;
+      --blue-dark:   #1565C0;
+      --bg:          #F1F8F6;
+      --white:       #FFFFFF;
+      --grey-light:  #F5F5F5;
+      --grey:        #9E9E9E;
+      --shadow:      rgba(0,0,0,0.12);
+      --radius:      16px;
+    }
+
+    body {
+      font-family: 'Roboto', sans-serif;
+      background: linear-gradient(135deg, #B2DFDB 0%, #E0F2F1 50%, #B3E5FC 100%);
+      min-height: 100vh;
+      padding: 24px 16px 60px;
+    }
+
+    /* ── Page Label ── */
+    .page-label {
+      position: fixed;
+      top: 14px; left: 50%;
+      transform: translateX(-50%);
+      background: var(--teal-dark);
+      color: #fff;
+      font-size: 11px;
+      padding: 5px 18px;
+      border-radius: 20px;
+      letter-spacing: 0.5px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.22);
+      white-space: nowrap;
+      z-index: 200;
+    }
+
+    /* ── Phone Shell ── */
+    .phone {
+      width: 390px;
+      min-height: 844px;
+      max-width: 100%;
+      background: var(--bg);
+      border-radius: 40px;
+      overflow: hidden;
+      box-shadow: 0 28px 80px rgba(0,0,0,0.3), 0 4px 16px rgba(0,0,0,0.1);
+      display: flex;
+      flex-direction: column;
+      border: 8px solid #1a1a1a;
+      position: relative;
+      margin: 56px auto 40px;
+    }
+    .phone::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 50%; transform: translateX(-50%);
+      width: 120px; height: 28px;
+      background: #1a1a1a;
+      border-radius: 0 0 18px 18px;
+      z-index: 10;
+    }
+
+    /* ── AppBar ── */
+    .app-bar {
+      background: var(--teal);
+      color: white;
+      padding: 40px 14px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+      flex-shrink: 0;
+    }
+    .app-bar-title { font-size: 17px; font-weight: 700; }
+    .cart-btn {
+      background: none; border: none; color: white;
+      font-size: 22px; cursor: pointer; position: relative;
+      padding: 4px; border-radius: 50%;
+      transition: background 0.2s;
+    }
+    .cart-btn:hover { background: rgba(255,255,255,0.15); }
+    .cart-badge {
+      position: absolute; top: -2px; right: -2px;
+      background: #e53935; color: white;
+      font-size: 9px; font-weight: 700;
+      width: 16px; height: 16px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      display: none;
+    }
+
+    /* ── Scrollable Body ── */
+    .body {
+      flex: 1; overflow-y: auto; display: flex; flex-direction: column;
+      scrollbar-width: none;
+    }
+    .body::-webkit-scrollbar { display: none; }
+
+    /* ── Header Banner ── */
+    .header-banner {
+      background: linear-gradient(135deg, var(--teal) 0%, var(--blue) 100%);
+      padding: 20px 18px 18px;
+      flex-shrink: 0;
+      animation: fadeDown 0.4s ease;
+    }
+    .header-banner h1 { color: #fff; font-size: 22px; font-weight: 700; }
+    .header-banner p  { color: rgba(255,255,255,0.75); font-size: 13px; margin-top: 4px; }
+    @keyframes fadeDown {
+      from { opacity: 0; transform: translateY(-8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Filter Card ── */
+    .filter-card {
+      background: var(--white);
+      border-radius: var(--radius);
+      margin: 14px 12px 8px;
+      padding: 16px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+      flex-shrink: 0;
+      animation: fadeUp 0.4s ease 0.1s both;
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .section-label {
+      font-size: 13px; font-weight: 700;
+      color: var(--teal-dark);
+      margin-bottom: 8px;
+    }
+
+    /* ── Search Input ── */
+    .search-wrap { position: relative; margin-bottom: 14px; }
+    .search-icon {
+      position: absolute; left: 12px; top: 50%;
+      transform: translateY(-50%);
+      font-size: 16px; color: var(--teal); pointer-events: none;
+    }
+    .search-input {
+      width: 100%;
+      background: var(--grey-light);
+      border: 1.5px solid #E0E0E0;
+      border-radius: 12px;
+      padding: 10px 14px 10px 38px;
+      font-size: 13px;
+      font-family: 'Roboto', sans-serif;
+      outline: none;
+      color: #333;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .search-input:focus {
+      border-color: var(--teal);
+      box-shadow: 0 0 0 3px rgba(0,137,123,0.12);
+    }
+
+    /* ── Dropdown ── */
+    .dropdown-wrap { position: relative; margin-bottom: 14px; }
+    .dropdown-icon {
+      position: absolute; left: 12px; top: 50%;
+      transform: translateY(-50%);
+      font-size: 16px; color: var(--teal); pointer-events: none;
+    }
+    .dropdown-select {
+      width: 100%;
+      background: var(--grey-light);
+      border: 1.5px solid #E0E0E0;
+      border-radius: 12px;
+      padding: 10px 14px 10px 38px;
+      font-size: 13px;
+      font-family: 'Roboto', sans-serif;
+      outline: none;
+      color: #333;
+      appearance: none;
+      cursor: pointer;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .dropdown-select:focus {
+      border-color: var(--teal);
+      box-shadow: 0 0 0 3px rgba(0,137,123,0.12);
+    }
+    .dropdown-arrow {
+      position: absolute; right: 12px; top: 50%;
+      transform: translateY(-50%);
+      font-size: 12px; color: var(--grey); pointer-events: none;
+    }
+
+    /* ── Slider Section ── */
+    .slider-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 6px;
+    }
+    .price-badge {
+      background: var(--teal);
+      color: white;
+      font-size: 11px; font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 20px;
+    }
+    .price-slider {
+      width: 100%; height: 4px;
+      accent-color: var(--teal);
+      cursor: pointer;
+      margin-bottom: 4px;
+    }
+    .slider-labels {
+      display: flex; justify-content: space-between;
+      font-size: 10px; color: var(--grey);
+    }
+
+    /* ── Action Buttons ── */
+    .btn-row {
+      display: flex; gap: 10px;
+      margin-top: 16px;
+    }
+    .btn {
+      flex: 1; padding: 10px 8px;
+      border: none; border-radius: 10px;
+      font-size: 12px; font-weight: 700;
+      font-family: 'Roboto', sans-serif;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 5px;
+      transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s;
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn-apply  { background: var(--teal); color: white; box-shadow: 0 3px 10px rgba(0,137,123,0.35); }
+    .btn-clear  { background: #546E7A; color: white; box-shadow: 0 3px 10px rgba(84,110,122,0.35); }
+    .btn:hover  { opacity: 0.9; box-shadow: 0 5px 14px rgba(0,0,0,0.18); }
+
+    /* ── Results Count ── */
+    .results-count {
+      display: flex; align-items: center; gap: 8px;
+      padding: 4px 14px 8px;
+    }
+    .results-bar {
+      width: 4px; height: 18px;
+      background: var(--teal);
+      border-radius: 2px;
+    }
+    .results-text { font-size: 13px; font-weight: 600; color: var(--teal-dark); }
+
+    /* ── Product Grid ── */
+    .product-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      padding: 0 12px 20px;
+    }
+
+    /* ── Product Card ── */
+    .product-card {
+      background: var(--white);
+      border-radius: var(--radius);
+      padding: 12px;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+      display: flex; flex-direction: column; gap: 6px;
+      animation: cardIn 0.3s ease both;
+      transition: box-shadow 0.2s, transform 0.2s;
+    }
+    .product-card:hover {
+      box-shadow: 0 8px 24px rgba(0,0,0,0.14);
+      transform: translateY(-2px);
+    }
+    @keyframes cardIn {
+      from { opacity: 0; transform: scale(0.95); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+    .product-icon-wrap {
+      width: 56px; height: 56px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 28px;
+      margin: 0 auto;
+    }
+    .product-name {
+      font-size: 13px; font-weight: 700;
+      color: #1A1A2E;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .product-category {
+      display: inline-block;
+      font-size: 9px; font-weight: 700;
+      color: var(--teal-dark);
+      background: rgba(0,137,123,0.1);
+      border-radius: 20px;
+      padding: 2px 8px;
+      width: fit-content;
+    }
+    .product-price {
+      font-size: 15px; font-weight: 700;
+      color: var(--blue-dark);
+    }
+    .product-rating {
+      display: flex; align-items: center; gap: 4px;
+      font-size: 11px; color: var(--grey);
+    }
+    .star { color: #FFA000; font-size: 12px; }
+    .btn-cart {
+      width: 100%; padding: 8px 4px;
+      background: var(--teal);
+      color: white;
+      border: none; border-radius: 10px;
+      font-size: 10px; font-weight: 700;
+      font-family: 'Roboto', sans-serif;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 4px;
+      transition: background 0.2s, transform 0.15s;
+      margin-top: auto;
+    }
+    .btn-cart:hover { background: var(--teal-dark); }
+    .btn-cart:active { transform: scale(0.96); }
+
+    /* ── Empty State ── */
+    .empty-state {
+      text-align: center; padding: 40px 20px;
+      grid-column: 1 / -1;
+    }
+    .empty-state .icon { font-size: 52px; margin-bottom: 12px; }
+    .empty-state h3 { font-size: 16px; color: #757575; font-weight: 600; }
+    .empty-state p  { font-size: 12px; color: #9E9E9E; margin-top: 6px; }
+
+    /* ── SnackBar ── */
+    .snackbar {
+      position: fixed; bottom: 24px; left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: var(--blue-dark);
+      color: white;
+      padding: 12px 20px;
+      border-radius: 12px;
+      font-size: 13px; font-weight: 500;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+      z-index: 999;
+      transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1), opacity 0.35s;
+      opacity: 0;
+      display: flex; align-items: center; gap: 12px;
+      white-space: nowrap;
+    }
+    .snackbar.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+    .snackbar.green { background: var(--teal); }
+    .snackbar.grey  { background: #546E7A; }
+    .snackbar-action {
+      color: #80CBC4; font-size: 12px; font-weight: 700;
+      cursor: pointer; letter-spacing: 0.5px;
+    }
+
+    /* ── Divider ── */
+    .divider {
+      height: 1px; background: #E0E0E0;
+      margin: 12px 0 10px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="page-label">📱 Flutter Experiment 3 — Input &amp; Forms</div>
+
+<!-- Phone Shell -->
+<div class="phone">
+
+  <!-- AppBar -->
+  <div class="app-bar">
+    <span class="app-bar-title">Product Search &amp; Filter</span>
+    <button class="cart-btn" onclick="showCartCount()" title="View Cart">
+      🛒
+      <span class="cart-badge" id="cartBadge">0</span>
+    </button>
+  </div>
+
+  <!-- Scrollable Body -->
+  <div class="body">
+
+    <!-- Header Banner -->
+    <div class="header-banner">
+      <h1>Find Your Product</h1>
+      <p id="totalCount">12 products available</p>
+    </div>
+
+    <!-- Filter Card (Form widget simulation) -->
+    <div class="filter-card">
+
+      <!-- Search Field (TextFormField) -->
+      <div class="section-label">🔍 Search Products</div>
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input
+          class="search-input"
+          id="searchInput"
+          type="text"
+          placeholder="Search by product name..."
+          oninput="onSearchChanged(this.value)"
+          autocomplete="off"
+        />
+      </div>
+
+      <!-- Category Dropdown (DropdownButtonFormField) -->
+      <div class="section-label">📂 Filter by Category</div>
+      <div class="dropdown-wrap">
+        <span class="dropdown-icon">📂</span>
+        <select class="dropdown-select" id="categorySelect" onchange="onCategoryChanged(this.value)">
+          <option value="All">All</option>
+          <option value="Electronics">Electronics</option>
+          <option value="Accessories">Accessories</option>
+          <option value="Fashion">Fashion</option>
+        </select>
+        <span class="dropdown-arrow">▼</span>
+      </div>
+
+      <!-- Price Slider -->
+      <div class="slider-header">
+        <div class="section-label" style="margin-bottom:0">💰 Maximum Price</div>
+        <div class="price-badge" id="priceBadge">Rs.100000</div>
+      </div>
+      <input
+        class="price-slider"
+        id="priceSlider"
+        type="range"
+        min="0"
+        max="100000"
+        value="100000"
+        step="5000"
+        oninput="onPriceChanged(this.value)"
+      />
+      <div class="slider-labels">
+        <span>Rs.0</span>
+        <span>Rs.1,00,000</span>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- Action Buttons (ElevatedButton) -->
+      <div class="btn-row">
+        <button class="btn btn-apply" onclick="applyFilters()">
+          <span>⚙️</span> Apply Filters
+        </button>
+        <button class="btn btn-clear" onclick="clearFilters()">
+          <span>✖️</span> Clear Filters
+        </button>
+      </div>
+    </div>
+
+    <!-- Results Count -->
+    <div class="results-count">
+      <div class="results-bar"></div>
+      <div class="results-text" id="resultsCount">12 product(s) found</div>
+    </div>
+
+    <!-- Product Grid (GridView.builder + ProductCard) -->
+    <div class="product-grid" id="productGrid">
+      <!-- Populated by JS -->
+    </div>
+
+  </div><!-- /body -->
+</div><!-- /phone -->
+
+<!-- SnackBar -->
+<div class="snackbar" id="snackbar">
+  <span id="snackbarMsg">Message</span>
+  <span class="snackbar-action" id="snackbarAction" onclick="hideSnackbar()">VIEW</span>
+</div>
+
+<script>
+// ============================================================
+// PRODUCT DATA — 12 predefined products
+// Matches the Flutter main.dart allProducts list exactly
+// ============================================================
+const allProducts = [
+  { name:'Laptop',      category:'Electronics', price:75000, rating:4.5, icon:'💻', color:'#1565C0', bg:'rgba(21,101,192,0.1)'  },
+  { name:'Smartphone',  category:'Electronics', price:55000, rating:4.7, icon:'📱', color:'#6A1B9A', bg:'rgba(106,27,154,0.1)' },
+  { name:'Headphones',  category:'Electronics', price:8000,  rating:4.3, icon:'🎧', color:'#00838F', bg:'rgba(0,131,143,0.1)'  },
+  { name:'Smart Watch', category:'Electronics', price:22000, rating:4.4, icon:'⌚', color:'#2E7D32', bg:'rgba(46,125,50,0.1)'  },
+  { name:'Camera',      category:'Electronics', price:45000, rating:4.6, icon:'📷', color:'#BF360C', bg:'rgba(191,54,12,0.1)'  },
+  { name:'Tablet',      category:'Electronics', price:35000, rating:4.2, icon:'📟', color:'#00695C', bg:'rgba(0,105,92,0.1)'   },
+  { name:'Sneakers',    category:'Fashion',     price:4500,  rating:4.1, icon:'👟', color:'#E65100', bg:'rgba(230,81,0,0.1)'   },
+  { name:'Backpack',    category:'Fashion',     price:2500,  rating:4.0, icon:'🎒', color:'#4E342E', bg:'rgba(78,52,46,0.1)'   },
+  { name:'Keyboard',    category:'Accessories', price:3500,  rating:4.4, icon:'⌨️', color:'#37474F', bg:'rgba(55,71,79,0.1)'   },
+  { name:'Mouse',       category:'Accessories', price:1500,  rating:4.2, icon:'🖱️', color:'#455A64', bg:'rgba(69,90,100,0.1)'  },
+  { name:'USB Hub',     category:'Accessories', price:2000,  rating:3.9, icon:'🔌', color:'#1B5E20', bg:'rgba(27,94,32,0.1)'   },
+  { name:'Sunglasses',  category:'Fashion',     price:1800,  rating:4.0, icon:'🕶️', color:'#F57F17', bg:'rgba(245,127,23,0.1)' },
+];
+
+// ============================================================
+// STATE VARIABLES (mirrors Flutter StatefulWidget state)
+// ============================================================
+let searchQuery    = '';
+let selectedCat    = 'All';
+let maxPrice       = 100000;
+let cartCount      = 0;
+let snackTimer     = null;
+
+// ============================================================
+// SEARCH INPUT HANDLING
+// Mirrors: onChanged: _onSearchChanged in TextFormField
+// ============================================================
+function onSearchChanged(val) {
+  searchQuery = val;
+  renderProducts(); // setState equivalent
+}
+
+// ============================================================
+// CATEGORY FILTERING
+// Mirrors: onChanged: _onCategoryChanged in DropdownButtonFormField
+// ============================================================
+function onCategoryChanged(val) {
+  selectedCat = val;
+  renderProducts(); // setState equivalent
+}
+
+// ============================================================
+// PRICE FILTERING
+// Mirrors: onChanged: _onPriceChanged on Slider
+// ============================================================
+function onPriceChanged(val) {
+  maxPrice = parseInt(val);
+  document.getElementById('priceBadge').textContent = 'Rs.' + maxPrice.toLocaleString('en-IN');
+  renderProducts(); // setState equivalent
+}
+
+// ============================================================
+// APPLY FILTERS BUTTON
+// Mirrors: ElevatedButton onPressed: _applyFiltersAction
+// Includes Form validation check
+// ============================================================
+function applyFilters() {
+  // Form validation: category cannot be empty
+  const cat = document.getElementById('categorySelect').value;
+  if (!cat) {
+    showSnackbar('Please select a category', 'grey', false);
+    return;
+  }
+  renderProducts();
+  showSnackbar('Filters applied!', 'green', false);
+}
+
+// ============================================================
+// CLEAR FILTERS BUTTON
+// Mirrors: ElevatedButton onPressed: _clearFilters
+// Resets: search text, category to All, price to max
+// ============================================================
+function clearFilters() {
+  searchQuery = '';
+  selectedCat = 'All';
+  maxPrice    = 100000;
+
+  document.getElementById('searchInput').value     = '';
+  document.getElementById('categorySelect').value  = 'All';
+  document.getElementById('priceSlider').value     = 100000;
+  document.getElementById('priceBadge').textContent = 'Rs.1,00,000';
+
+  renderProducts();
+  showSnackbar('Filters cleared!', 'grey', false);
+}
+
+// ============================================================
+// ADD TO CART
+// Mirrors: _addToCart — increments _cartCount, shows SnackBar
+// ============================================================
+function addToCart(productName) {
+  cartCount++;
+
+  // Update cart badge (AppBar cart count)
+  const badge = document.getElementById('cartBadge');
+  badge.textContent = cartCount;
+  badge.style.display = 'flex';
+
+  showSnackbar(productName + ' added to cart 🛒', 'blue', true);
+}
+
+function showCartCount() {
+  showSnackbar('Cart has ' + cartCount + ' item(s)', 'grey', false);
+}
+
+// ============================================================
+// CORE FILTER LOGIC
+// Mirrors: _applyFilters() in Flutter — combines all 3 filters
+// ============================================================
+function getFilteredProducts() {
+  return allProducts.filter(p => {
+    const matchesSearch   = searchQuery === '' ||
+                            p.name.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory = selectedCat === 'All' || p.category === selectedCat;
+    const matchesPrice    = p.price <= maxPrice;
+    return matchesSearch && matchesCategory && matchesPrice;
+  });
+}
+
+// ============================================================
+// RENDER PRODUCTS (setState equivalent)
+// Rebuilds the ProductCard grid based on filtered list
+// ============================================================
+function renderProducts() {
+  const filtered = getFilteredProducts();
+  const grid     = document.getElementById('productGrid');
+  const countEl  = document.getElementById('resultsCount');
+
+  countEl.textContent = filtered.length + ' product(s) found';
+  grid.innerHTML = '';
+
+  if (filtered.length === 0) {
+    grid.innerHTML = `
+      <div class="empty-state">
+        <div class="icon">🔍</div>
+        <h3>No products found</h3>
+        <p>Try adjusting your search or filters</p>
+      </div>`;
+    return;
+  }
+
+  filtered.forEach((p, i) => {
+    const stars = '★'.repeat(Math.floor(p.rating)) + (p.rating % 1 >= 0.5 ? '½' : '');
+    const card  = document.createElement('div');
+    card.className = 'product-card';
+    card.style.animationDelay = (i * 0.04) + 's';
+    card.innerHTML = `
+      <div class="product-icon-wrap" style="background:${p.bg}">
+        <span style="font-size:26px">${p.icon}</span>
+      </div>
+      <div class="product-name">${p.name}</div>
+      <div class="product-category">${p.category}</div>
+      <div class="product-price">Rs.${p.price.toLocaleString('en-IN')}</div>
+      <div class="product-rating">
+        <span class="star">★</span>
+        <span>${p.rating}</span>
+      </div>
+      <button class="btn-cart" onclick="addToCart('${p.name}')">
+        🛒 Add to Cart
+      </button>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+// ============================================================
+// SNACKBAR (Flutter SnackBar widget simulation)
+// ============================================================
+function showSnackbar(msg, type, showAction) {
+  const sb     = document.getElementById('snackbar');
+  const msgEl  = document.getElementById('snackbarMsg');
+  const actEl  = document.getElementById('snackbarAction');
+
+  msgEl.textContent = msg;
+  sb.className      = 'snackbar ' + (type === 'green' ? 'green' : type === 'grey' ? 'grey' : '');
+  actEl.style.display = showAction ? 'inline' : 'none';
+
+  if (snackTimer) clearTimeout(snackTimer);
+  sb.classList.add('show');
+  snackTimer = setTimeout(hideSnackbar, 2500);
+}
+function hideSnackbar() {
+  document.getElementById('snackbar').classList.remove('show');
+}
+
+// ============================================================
+// INITIAL RENDER
+// ============================================================
+renderProducts();
+</script>
+</body>
+</html>
